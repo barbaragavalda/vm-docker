@@ -10,6 +10,8 @@ services:
  php:
   build: './system/docker/php'
   container_name: php
+  depends_on:
+   - mariadb
   networks:
    - backend
   restart: always
@@ -32,6 +34,7 @@ services:
   container_name: apache
   depends_on:
    - php
+   - mariadb
   networks:
    - backend
    - frontend
