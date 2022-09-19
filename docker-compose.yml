@@ -11,7 +11,13 @@ services:
    - mariadb
   networks:
    - backend
+  environment:
+   MYSQL_USER: optisistem
+   MYSQL_PASSWORD: rtZYS9wJ7HWWNKdvqKJJR3B4AuWQ7WTgbwJXSrTBKJXyUX2pxFbPxVkuMkNEWGqv
+   MYSQL_HOST: mariadb
   restart: always
+  volumes:
+  - ./src/:/usr/local/apache2/htdocs/
  mariadb:
   build: './system/docker/mariadb'
   container_name: mariadb
@@ -39,6 +45,8 @@ services:
    - "80:80/tcp"
    - "443:443/tcp"
   restart: always
+  volumes:
+  - ./src/:/usr/local/apache2/htdocs/
 networks:
   backend:
   frontend:
