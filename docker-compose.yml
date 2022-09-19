@@ -7,3 +7,6 @@ services:
  hellow-world:
   build: './system/docker/hello-world'
   container_name: hello-world
+networks:
+  backend:
+  frontend:
