@@ -12,6 +12,17 @@ services:
   container_name: php
   networks:
    - backend
+ apache:
+  build: './system/docker/apache'
+  container_name: apache
+  depends_on:
+   - php
+  networks:
+   - backend
+   - frontend
+  ports:
+   - "80:80/tcp"
+   - "443:443/tcp"
 networks:
   backend:
   frontend:
