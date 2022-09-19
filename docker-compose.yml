@@ -1,0 +1,9 @@
+#
+# Builds and runs all docker containers to start a new VM
+# @file docker-compose.yml
+
+version: '3.3'
+services:
+ hellow-world:
+  build: './system/docker/hello-world'
+  container_name: hello-world
