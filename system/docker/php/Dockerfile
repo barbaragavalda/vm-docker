@@ -1,5 +1,7 @@
 FROM php:fpm-alpine
 
+ENV SRC_PATH=/var/www/html
+
 ENV TZ Europe/Madrid
 
 RUN apk update --update
