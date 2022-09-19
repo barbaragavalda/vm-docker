@@ -13,6 +13,20 @@ services:
   networks:
    - backend
   restart: always
+ mariadb:
+  build: './system/docker/mariadb'
+  container_name: mariadb
+  networks:
+   - backend
+  environment:
+   MYSQL_ROOT_PASSWORD:
+   MYSQL_USER:
+   MYSQL_PASSWORD:
+   MYSQL_ALLOW_EMPTY_PASSWORD: 0
+   MYSQL_RANDOM_ROOT_PASSWORD: 0
+  restart: always
+  ports:
+   - "3306:3306"
  apache:
   build: './system/docker/apache'
   container_name: apache
