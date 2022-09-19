@@ -7,6 +7,11 @@ services:
  hellow-world:
   build: './system/docker/hello-world'
   container_name: hello-world
+ php:
+  build: './system/docker/php'
+  container_name: php
+  networks:
+   - backend
 networks:
   backend:
   frontend:
