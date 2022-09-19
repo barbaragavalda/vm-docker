@@ -12,6 +12,7 @@ services:
   container_name: php
   networks:
    - backend
+  restart: always
  apache:
   build: './system/docker/apache'
   container_name: apache
@@ -23,6 +24,7 @@ services:
   ports:
    - "80:80/tcp"
    - "443:443/tcp"
+  restart: always
 networks:
   backend:
   frontend:
