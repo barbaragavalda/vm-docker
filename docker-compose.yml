@@ -17,7 +17,7 @@ services:
    MYSQL_HOST: mariadb
   restart: always
   volumes:
-  - ./src/:/var/www/html
+  - ./storage/src/:/var/www/html
  mariadb:
   build: './system/docker/mariadb'
   container_name: mariadb
@@ -46,7 +46,7 @@ services:
    - "443:443/tcp"
   restart: always
   volumes:
-  - ./src/:/usr/local/apache2/htdocs
+  - ./storage/src/:/usr/local/apache2/htdocs
 networks:
   backend:
   frontend:
