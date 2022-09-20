@@ -9,7 +9,7 @@ TEST_PATH="${ROOT_PATH}/templates/test"
 
 command=$1
 case $command in
-    build-examples)
+    build-example)
         cp -R $TEST_PATH/* $SRC_PATH
         echo "Test examples created, you may open your browser to check them under localhost"
     ;;
