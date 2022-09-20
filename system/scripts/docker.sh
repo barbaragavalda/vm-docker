@@ -1,8 +1,12 @@
 #!/bin/bash
 
-ORIGINAL_PATH=$(pwd)
+source config.sh
+source system.sh
+
+setOriginalPath
+setEnvironment
+
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-ROOT_PATH='../..'
 
 command=$1
 case $command in
@@ -17,4 +21,4 @@ case $command in
         echo "Command not found";
     ;;
 esac
-cd "$ORIGINAL_PATH"
+cdOriginalPath

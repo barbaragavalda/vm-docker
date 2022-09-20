@@ -1,11 +1,12 @@
 #!/bin/bash
 
-ORIGINAL_PATH=$(pwd)
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source config.sh
+source system.sh
 
-ROOT_PATH="../.."
-SRC_PATH="${ROOT_PATH}/storage/src"
-TEST_PATH="${ROOT_PATH}/templates/test"
+setOriginalPath
+setEnvironment
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 command=$1
 case $command in
@@ -17,4 +18,4 @@ case $command in
         echo "Command not found";
     ;;
 esac
-cd "$ORIGINAL_PATH"
+cdOriginalPath
