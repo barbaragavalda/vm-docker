@@ -1,5 +1,11 @@
 # VM
 
 ## Starting and stopping:
-**start:** docker-compose up --detach --force-recreate --remove-orphans --always-recreate-deps --build
-**stop:** docker-compose down
+First you need to change directory to the scripts directory:
+```
+#cd /Users/barbaragavalda/Documents/OPTISISTEM/VM/system/scripts
+```
+
+After this you can start or stop the VM with the following commands:
+**start:** sh docker.sh start 
+**stop:** sh docker.sh stop
