@@ -32,6 +32,8 @@ services:
   restart: always
   ports:
    - "3306:3306"
+  volumes:
+   - ./storage/database/:/var/lib/mysql/
  apache:
   build: './system/docker/apache'
   container_name: apache
