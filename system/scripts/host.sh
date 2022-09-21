@@ -1,5 +1,7 @@
 #!/bin/sh
 
+HOSTS_FILE='/etc/hosts'
+
 source config.sh
 source system.sh
 
@@ -11,6 +13,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 command=$1
 hostName=$2
 hostNameAlias=${hostName/./-}
+hostString="127.0.0.1 $hostName"
 
 case $command in
     create)
@@ -22,12 +25,15 @@ case $command in
         
         cp $TEMPLATES_TEST_PATH/new-host-index.html $STORAGE_SRC_PATH/$hostNameAlias/index.html
         sed -i '' "s/{HOST_NAME}/${hostName}/g" "$STORAGE_SRC_PATH/$hostNameAlias/index.html"
-        # 3) crear base de dades?
+
+        echo "$hostString" | sudo tee -a "$HOSTS_FILE"
     ;;
     delete)
         echo $command $hostName as $hostNameAlias
         rm $STORAGE_CONFIG_APACHE_PATH/$hostNameAlias.conf
         rm -rf $STORAGE_SRC_PATH/$hostNameAlias
+        sudo sed -i '' "/$hostString/d" "$HOSTS_FILE"
+
     ;;
     *)
         echo "Command not found";
@@ -35,3 +41,4 @@ case $command in
 esac
 
 cdOriginalPath
+
