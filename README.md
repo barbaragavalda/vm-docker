@@ -14,11 +14,11 @@ After this you can use the scripts described in this guide.
 No need for further explanation on this commands.
 ```bash
 sh docker.sh start 
-````
 ```
+```bash
 sh docker.sh stop
 ```
-```
+```bash
 sh docker.sh restart
 ```
 Obviously if docker is not running your hosts won't work.
