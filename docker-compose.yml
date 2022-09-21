@@ -48,6 +48,7 @@ services:
    - "443:443/tcp"
   restart: always
   volumes:
+  - ./storage/config/apache/:/usr/local/apache2/conf/vhosts
   - ./storage/src/:/usr/local/apache2/htdocs
 networks:
   backend:

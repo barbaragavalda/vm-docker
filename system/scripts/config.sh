@@ -5,6 +5,8 @@ setEnvironment(){
 
     # STORAGE
     STORAGE_PATH="${ROOT_PATH}/storage"
+    STORAGE_CONFIG_PATH="${STORAGE_PATH}/config"
+    STORAGE_CONFIG_APACHE_PATH="${STORAGE_CONFIG_PATH}/apache"
     STORAGE_SRC_PATH="${STORAGE_PATH}/src"
     
     # TEMPLATES

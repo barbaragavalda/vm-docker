@@ -9,19 +9,25 @@ setEnvironment
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 command=$1
-hostname=$2
+hostName=$2
+hostNameAlias=${hostName/./-}
 
 case $command in
     create)
-        echo $1 $2
-        mkdir -p $STORAGE_SRC_PATH/$2
-        cp $TEMPLATES_APACHE_PATH 
-        # 2) crear la config de apache
+        echo $command $hostName as $hostNameAlias
+        mkdir -p $STORAGE_SRC_PATH/$hostNameAlias
+        cp $TEMPLATES_APACHE_PATH/new-vhost.conf $STORAGE_CONFIG_APACHE_PATH/$hostNameAlias.conf
+        sed -i '' "s/{HOST_NAME}/${hostName}/g" "$STORAGE_CONFIG_APACHE_PATH/$hostNameAlias.conf"
+        sed -i '' "s/{HOST_NAME_ALIAS}/${hostNameAlias}/g" "$STORAGE_CONFIG_APACHE_PATH/$hostNameAlias.conf"
+        
+        cp $TEMPLATES_TEST_PATH/new-host-index.html $STORAGE_SRC_PATH/$hostNameAlias/index.html
+        sed -i '' "s/{HOST_NAME}/${hostName}/g" "$STORAGE_SRC_PATH/$hostNameAlias/index.html"
         # 3) crear base de dades?
     ;;
     delete)
-        echo $1 $2
-        rm -rf $STORAGE_SRC_PATH/$2
+        echo $command $hostName as $hostNameAlias
+        rm $STORAGE_CONFIG_APACHE_PATH/$hostNameAlias.conf
+        rm -rf $STORAGE_SRC_PATH/$hostNameAlias
     ;;
     *)
         echo "Command not found";
