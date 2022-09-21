@@ -18,4 +18,5 @@ case $command in
         echo "Command not found";
     ;;
 esac
+
 cdOriginalPath
