@@ -40,5 +40,7 @@ case $command in
     ;;
 esac
 
+sh $SCRIPTS_PATH/docker.sh restart
+
 cdOriginalPath
 

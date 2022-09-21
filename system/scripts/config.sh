@@ -3,6 +3,9 @@
 setEnvironment(){
     ROOT_PATH="../.."
 
+    # SCRIPTS
+    SCRIPTS_PATH="${ROOT_PATH}/system/scripts"
+
     # STORAGE
     STORAGE_PATH="${ROOT_PATH}/storage"
     STORAGE_CONFIG_PATH="${STORAGE_PATH}/config"
