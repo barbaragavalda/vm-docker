@@ -11,7 +11,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 command=$1
 case $command in
     build-example)
-        cp -R $TEST_PATH/* $SRC_PATH
+        cp -R $TEMPLATES_TEST_PATH/* $STORAGE_SRC_PATH
         echo "Test examples created, you may open your browser to check them under localhost"
     ;;
     *)
