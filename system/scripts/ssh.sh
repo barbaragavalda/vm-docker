@@ -10,6 +10,7 @@ function addRsaId(){
     if [ ! -f $STORAGE_RSAID_PATH ]
     then
         cp $(getRsaIdPath) $STORAGE_RSAID_PATH
+        chmod 0600 $STORAGE_RSAID_PATH
     else
         echo "rsa-id already exists"
     fi

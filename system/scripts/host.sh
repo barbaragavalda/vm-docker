@@ -25,6 +25,7 @@ case $command in
         sed -i '' "s/{HOST_NAME}/${hostName}/g" "$STORAGE_SRC_PATH/$hostNameAlias/index.html"
 
         echo "$hostString" | sudo tee -a "$HOSTS_FILE"
+        sh $SCRIPTS_PATH/ssh.sh add-rsa-id
     ;;
     delete)
         echo $command $hostName as $hostNameAlias

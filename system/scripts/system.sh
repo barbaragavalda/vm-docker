@@ -5,7 +5,7 @@ cdOriginalPath(){
 }
 
 getRsaIdPath(){
-    echo ~/.ssh/id_rsa.pub
+    echo ~/.ssh/id_rsa
 }
 
 setOriginalPath(){
