@@ -8,8 +8,6 @@ source system.sh
 setOriginalPath
 setEnvironment
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-
 command=$1
 hostName=$2
 hostNameAlias=${hostName/./-}
