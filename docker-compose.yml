@@ -18,6 +18,7 @@ services:
   restart: always
   volumes:
   - ./storage/src/:/var/www/html
+  - ./storage/id_rsa.pub:/root/.ssh/id_rsa
  mariadb:
   build: './system/docker/mariadb'
   container_name: mariadb
