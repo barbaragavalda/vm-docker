@@ -4,6 +4,6 @@ cdOriginalPath(){
     cd "$ORIGINAL_PATH"
 }
 
-setOriginalPwd(){
+setOriginalPath(){
     ORIGINAL_PATH=$(pwd)
 }
