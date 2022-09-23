@@ -17,7 +17,3 @@ setEnvironment(){
     TEMPLATES_APACHE_PATH="${TEMPLATES_PATH}/apache"
     TEMPLATES_TEST_PATH="${TEMPLATES_PATH}/test"
 }
-
-setOriginalPath(){
-    ORIGINAL_PATH=$(pwd)
-}
