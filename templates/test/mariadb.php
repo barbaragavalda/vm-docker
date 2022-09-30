@@ -3,7 +3,7 @@
 $host = 'mariadb';
 $db = 'information_schema';
 $user = 'optisistem';
-$password = 'rtZYS9wJ7HWWNKdvqKJJR3B4AuWQ7WTgbwJXSrTBKJXyUX2pxFbPxVkuMkNEWGqv';
+$password = 'rtZYS9wJ7HWWNK';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=UTF8";
 

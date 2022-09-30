@@ -58,3 +58,11 @@ Deleting an *example.local* host will:
 * Remove host configuration in `/etc/hosts` file
 * Restart docker
 * Your new host is no longer accessible at http://example.local
+
+## 3.1. Credentials
+### 3.1.1. Database
+* HOST: mariadb
+* USER: optisistem
+* PASSWORD: rtZYS9wJ7HWWNK
+
+//TODO AFEGIR COM ES FA EL COMPOSE
