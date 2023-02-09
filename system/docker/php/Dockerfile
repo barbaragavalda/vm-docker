@@ -13,7 +13,10 @@ RUN apk update; \
 RUN apk --no-cache add \
     gettext \
     gettext-dev \
-    icu-dev
+    icu-dev \
+    jpeg-dev \
+    libpng-dev
+    
 RUN docker-php-ext-install pdo_mysql
 RUN docker-php-ext-configure gettext &&\
     docker-php-ext-install gettext &&\
@@ -26,3 +29,6 @@ RUN apk fix && \
     git lfs install
 
 RUN docker-php-ext-install gd zip
+RUN docker-php-ext-configure gd --with-jpeg &&\
+	docker-php-ext-install -j$(nproc) gd &&\
+	docker-php-ext-install exif
