@@ -32,3 +32,5 @@ RUN docker-php-ext-install gd zip
 RUN docker-php-ext-configure gd --with-jpeg &&\
 	docker-php-ext-install -j$(nproc) gd &&\
 	docker-php-ext-install exif
+	
+COPY php.ini /usr/local/etc/php/php.ini
