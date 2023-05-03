@@ -25,11 +25,11 @@ RUN docker-php-ext-configure gettext &&\
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
 RUN apk fix && \
-    apk --no-cache --update add git git-lfs gpg less openssh zlib-dev libpng-dev libzip libzip-dev && \
+    apk --no-cache --update add git git-lfs gpg less openssh zlib-dev libpng-dev libzip libzip-dev libwebp-dev && \
     git lfs install
 
 RUN docker-php-ext-install gd zip
-RUN docker-php-ext-configure gd --with-jpeg &&\
+RUN docker-php-ext-configure gd --with-jpeg --with-webp &&\
 	docker-php-ext-install -j$(nproc) gd &&\
 	docker-php-ext-install exif
 	
