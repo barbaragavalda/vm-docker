@@ -28,6 +28,7 @@ services:
    MYSQL_ROOT_PASSWORD: 8S6yTBCh9vFeKcs7yrHgZ2YcVQPYHI9cQGGHekkDnDxMFJ2LhUKhp8VNFcUuG8pA
    MYSQL_ALLOW_EMPTY_PASSWORD: 0
    MYSQL_RANDOM_ROOT_PASSWORD: 0
+  command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
   restart: always
   ports:
    - "3306:3306"
