@@ -2,7 +2,6 @@
 # Builds and runs all docker containers to start a new VM
 # @file docker-compose.yml
 
-version: '3.3'
 services:
  php:
   build: './system/docker/php'
