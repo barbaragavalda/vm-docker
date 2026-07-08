@@ -16,13 +16,13 @@ hostString="127.0.0.1 $hostName"
 case $command in
     create)
         echo $command $hostName as $hostNameAlias
-        mkdir -p $STORAGE_SRC_PATH/$hostNameAlias
+        mkdir -p $STORAGE_SRC_PATH/$hostNameAlias/web
         cp $TEMPLATES_APACHE_PATH/new-vhost.conf $STORAGE_CONFIG_APACHE_PATH/$hostNameAlias.conf
         sed -i '' "s/{HOST_NAME}/${hostName}/g" "$STORAGE_CONFIG_APACHE_PATH/$hostNameAlias.conf"
         sed -i '' "s/{HOST_NAME_ALIAS}/${hostNameAlias}/g" "$STORAGE_CONFIG_APACHE_PATH/$hostNameAlias.conf"
-        
-        cp $TEMPLATES_TEST_PATH/new-host-index.html $STORAGE_SRC_PATH/$hostNameAlias/index.html
-        sed -i '' "s/{HOST_NAME}/${hostName}/g" "$STORAGE_SRC_PATH/$hostNameAlias/index.html"
+
+        cp $TEMPLATES_TEST_PATH/new-host-index.html $STORAGE_SRC_PATH/$hostNameAlias/web/index.html
+        sed -i '' "s/{HOST_NAME}/${hostName}/g" "$STORAGE_SRC_PATH/$hostNameAlias/web/index.html"
 
         echo "$hostString" | sudo tee -a "$HOSTS_FILE"
         sh $SCRIPTS_PATH/ssh.sh add-rsa-id
