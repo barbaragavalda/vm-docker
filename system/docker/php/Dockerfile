@@ -1,4 +1,4 @@
-FROM php:8.3.14-fpm-alpine
+FROM php:8.5-fpm-alpine
 
 ENV SRC_PATH=/var/www/html
 
