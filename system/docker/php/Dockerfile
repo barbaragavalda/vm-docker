@@ -17,7 +17,7 @@ RUN apk --no-cache add \
     jpeg-dev \
     libpng-dev
     
-RUN docker-php-ext-install pdo_mysql
+RUN docker-php-ext-install pdo_mysql mysqli
 RUN docker-php-ext-configure gettext &&\
     docker-php-ext-install gettext &&\
     docker-php-ext-configure intl &&\
@@ -25,12 +25,15 @@ RUN docker-php-ext-configure gettext &&\
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
 RUN apk fix && \
-    apk --no-cache --update add git git-lfs gpg less openssh zlib-dev libpng-dev libzip libzip-dev libwebp-dev && \
+    apk --no-cache --update add git git-lfs gpg less openssh zlib-dev libpng-dev libzip libzip-dev libwebp-dev openldap-dev && \
     git lfs install
 
 RUN docker-php-ext-install gd zip
 RUN docker-php-ext-configure gd --with-jpeg --with-webp &&\
 	docker-php-ext-install -j$(nproc) gd &&\
-	docker-php-ext-install exif
+	docker-php-ext-install exif &&\
+	docker-php-ext-install ftp
+RUN docker-php-ext-configure ldap --with-libdir=lib &&\
+	docker-php-ext-install ldap
 	
 COPY php.ini /usr/local/etc/php/php.ini
