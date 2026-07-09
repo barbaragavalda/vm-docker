@@ -18,6 +18,7 @@ services:
   volumes:
   - ./storage/src/:/var/www/html
   - ./storage/id_rsa.pub:/root/.ssh/id_rsa
+  - ./storage/composer-home:/root/.composer
  mariadb:
   build: './system/docker/mariadb'
   container_name: mariadb
