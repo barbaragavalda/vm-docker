@@ -11,25 +11,33 @@ SKELETON_PATH="${STORAGE_SRC_PATH}/freimguork-skeleton"
 
 usage(){
     cat <<'USAGE'
-Usage: sh create-project.sh <slug> <prod-domain> [project-name] [description]
+Usage: sh create-project.sh <bitbucket|github> <slug> <prod-domain> [project-name] [description]
 
+  <bitbucket|github> which provider to create the project's repo on
   <slug>          lowercase-hyphenated, e.g. "tv-tracker". Used for the local
                   host (<slug>.local), the project folder (<slug>-local),
                   the DB name and the composer package name.
-  <prod-domain>   production domain, e.g. "tvtracker.com"
+  <prod-domain>   production domain, e.g. "tvtracker.com" - also the repo
+                  name on either provider
   [project-name]  human-readable name (default: Title Case of <slug>)
   [description]   short description (default: empty)
 
 Scaffolds a new core+Appacman project from freimguork-skeleton: creates the
-Bitbucket repo, the vhost/host entry (via host.sh), copies the skeleton,
-fills in every placeholder, generates encryption secrets, commits and
-pushes the initial state, creates the database (using the shared mariadb
-credentials documented in the VM's own README.md), imports the base
-Appacman schema and runs composer install.
+repo, the vhost/host entry (via host.sh), copies the skeleton, fills in
+every placeholder, generates encryption secrets, commits and pushes the
+initial state, creates the database (using the shared mariadb credentials
+documented in the VM's own README.md), imports the base Appacman schema and
+runs composer install.
 
-Needs a Bitbucket app password (repository:write on the Optisistem
-workspace) in the BITBUCKET_APP_PASSWORD env var - prompts for it
-interactively if that's not set. BITBUCKET_USERNAME defaults to "bgavalda".
+bitbucket: creates a private repo under the Optisistem workspace. Needs a
+Bitbucket app password (repository:write on that workspace) in the
+BITBUCKET_APP_PASSWORD env var - prompts for it interactively if that's not
+set. BITBUCKET_USERNAME defaults to "bgavalda".
+
+github: creates a private repo under the authenticated `gh` account
+(GITHUB_OWNER, defaults to "barbaragavalda" - the only account it can
+currently be, since that account isn't in any organization). Needs `gh` to
+already be logged in (`gh auth status`).
 
 Creating the first admin user is left as a manual step (see "First admin
 user" in the new project's own README.md) since it needs a real password
@@ -55,13 +63,25 @@ BITBUCKET_USERNAME="${BITBUCKET_USERNAME:-bgavalda}"
 # editing that config
 BITBUCKET_GIT_SSH="/usr/bin/ssh"
 
-slug=$1
-prodDomain=$2
-projectName=${3:-$(echo "$slug" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1')}
-description=${4:-}
+# GitHub repos go under this account - `gh` is already set up as this
+# machine's git credential helper for github.com, so pushing over https
+# needs no extra workaround the way Bitbucket's ssh does
+GITHUB_OWNER="${GITHUB_OWNER:-barbaragavalda}"
 
-if [ -z "$slug" ] || [ -z "$prodDomain" ]; then
+provider=$1
+slug=$2
+prodDomain=$3
+projectName=${4:-$(echo "$slug" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1')}
+description=${5:-}
+
+if [ -z "$provider" ] || [ -z "$slug" ] || [ -z "$prodDomain" ]; then
     usage
+    cdOriginalPath
+    exit 1
+fi
+
+if [ "$provider" != "bitbucket" ] && [ "$provider" != "github" ]; then
+    echo "provider must be 'bitbucket' or 'github' (got: $provider)"
     cdOriginalPath
     exit 1
 fi
@@ -96,33 +116,54 @@ if [ -n "$dbExists" ]; then
     exit 1
 fi
 
-if [ -z "$BITBUCKET_APP_PASSWORD" ]; then
-    echo -n "Bitbucket app password (${BITBUCKET_USERNAME}, ${BITBUCKET_WORKSPACE} workspace): "
-    read -rs BITBUCKET_APP_PASSWORD
-    echo
-fi
+if [ "$provider" = "bitbucket" ]; then
+    if [ -z "$BITBUCKET_APP_PASSWORD" ]; then
+        echo -n "Bitbucket app password (${BITBUCKET_USERNAME}, ${BITBUCKET_WORKSPACE} workspace): "
+        read -rs BITBUCKET_APP_PASSWORD
+        echo
+    fi
 
-repoCheckStatus=$(curl -s -o /dev/null -w "%{http_code}" -u "${BITBUCKET_USERNAME}:${BITBUCKET_APP_PASSWORD}" \
-    "https://api.bitbucket.org/2.0/repositories/${BITBUCKET_WORKSPACE}/${prodDomain}")
-if [ "$repoCheckStatus" = "200" ]; then
-    echo "Bitbucket repo ${BITBUCKET_WORKSPACE}/${prodDomain} already exists - aborting so nothing gets reused by accident"
-    cdOriginalPath
-    exit 1
-elif [ "$repoCheckStatus" != "404" ]; then
-    echo "could not check Bitbucket (HTTP $repoCheckStatus) - check the app password/username and try again"
-    cdOriginalPath
-    exit 1
-fi
+    repoCheckStatus=$(curl -s -o /dev/null -w "%{http_code}" -u "${BITBUCKET_USERNAME}:${BITBUCKET_APP_PASSWORD}" \
+        "https://api.bitbucket.org/2.0/repositories/${BITBUCKET_WORKSPACE}/${prodDomain}")
+    if [ "$repoCheckStatus" = "200" ]; then
+        echo "Bitbucket repo ${BITBUCKET_WORKSPACE}/${prodDomain} already exists - aborting so nothing gets reused by accident"
+        cdOriginalPath
+        exit 1
+    elif [ "$repoCheckStatus" != "404" ]; then
+        echo "could not check Bitbucket (HTTP $repoCheckStatus) - check the app password/username and try again"
+        cdOriginalPath
+        exit 1
+    fi
 
-echo "==> creating Bitbucket repo ${BITBUCKET_WORKSPACE}/${prodDomain}"
-createStatus=$(curl -s -o /dev/null -w "%{http_code}" -u "${BITBUCKET_USERNAME}:${BITBUCKET_APP_PASSWORD}" \
-    -H "Content-Type: application/json" \
-    -X POST "https://api.bitbucket.org/2.0/repositories/${BITBUCKET_WORKSPACE}/${prodDomain}" \
-    -d '{"scm": "git", "is_private": true}')
-if [ "$createStatus" != "200" ] && [ "$createStatus" != "201" ]; then
-    echo "Bitbucket repo creation failed (HTTP $createStatus)"
-    cdOriginalPath
-    exit 1
+    echo "==> creating Bitbucket repo ${BITBUCKET_WORKSPACE}/${prodDomain}"
+    createStatus=$(curl -s -o /dev/null -w "%{http_code}" -u "${BITBUCKET_USERNAME}:${BITBUCKET_APP_PASSWORD}" \
+        -H "Content-Type: application/json" \
+        -X POST "https://api.bitbucket.org/2.0/repositories/${BITBUCKET_WORKSPACE}/${prodDomain}" \
+        -d '{"scm": "git", "is_private": true}')
+    if [ "$createStatus" != "200" ] && [ "$createStatus" != "201" ]; then
+        echo "Bitbucket repo creation failed (HTTP $createStatus)"
+        cdOriginalPath
+        exit 1
+    fi
+else
+    if ! gh auth status >/dev/null 2>&1; then
+        echo "gh is not logged in - run 'gh auth login' first"
+        cdOriginalPath
+        exit 1
+    fi
+
+    if gh repo view "${GITHUB_OWNER}/${prodDomain}" >/dev/null 2>&1; then
+        echo "GitHub repo ${GITHUB_OWNER}/${prodDomain} already exists - aborting so nothing gets reused by accident"
+        cdOriginalPath
+        exit 1
+    fi
+
+    echo "==> creating GitHub repo ${GITHUB_OWNER}/${prodDomain}"
+    if ! gh repo create "${GITHUB_OWNER}/${prodDomain}" --private >/dev/null; then
+        echo "GitHub repo creation failed"
+        cdOriginalPath
+        exit 1
+    fi
 fi
 
 echo "==> creating host $hostName"
@@ -188,9 +229,16 @@ sed -i '' "s/<64 hex chars>/${secretProd}/g" config/prod/keys.php
 echo "==> committing and pushing initial state"
 git add -A
 git commit -q -m "Initial scaffold from freimguork-skeleton"
-git remote add origin "git@bitbucket.org:${BITBUCKET_WORKSPACE}/${prodDomain}.git"
-if ! GIT_SSH_COMMAND="${BITBUCKET_GIT_SSH}" git push -q -u origin master; then
-    echo "push failed - the repo was created and committed locally, finish pushing manually"
+if [ "$provider" = "bitbucket" ]; then
+    git remote add origin "git@bitbucket.org:${BITBUCKET_WORKSPACE}/${prodDomain}.git"
+    if ! GIT_SSH_COMMAND="${BITBUCKET_GIT_SSH}" git push -q -u origin master; then
+        echo "push failed - the repo was created and committed locally, finish pushing manually"
+    fi
+else
+    git remote add origin "https://github.com/${GITHUB_OWNER}/${prodDomain}.git"
+    if ! git push -q -u origin master; then
+        echo "push failed - the repo was created and committed locally, finish pushing manually"
+    fi
 fi
 
 echo "==> creating database"
@@ -209,13 +257,19 @@ docker exec php sh -c "cd /var/www/html/${hostNameAlias} && composer install"
 
 cdOriginalPath
 
+if [ "$provider" = "bitbucket" ]; then
+    repoUrl="https://bitbucket.org/${BITBUCKET_WORKSPACE}/${prodDomain}"
+else
+    repoUrl="https://github.com/${GITHUB_OWNER}/${prodDomain}"
+fi
+
 cat <<SUMMARY
 
 Done. ${projectName} is ready at:
   http://${hostName}/          (public site)
   http://${hostName}/wallaby/  (Appacman admin - no user yet)
 
-Repo: https://bitbucket.org/${BITBUCKET_WORKSPACE}/${prodDomain}
+Repo: ${repoUrl}
 
 DB: name=${dbName} (uses the shared VM DB user, already written into
 config/{dev,prod}/db.php)

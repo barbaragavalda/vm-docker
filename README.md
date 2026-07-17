@@ -73,35 +73,49 @@ copying it by hand, filling in every placeholder and setting up the host/databas
 `create-project.sh` automates all of it:
 
 ```bash
-sh create-project.sh <slug> <prod-domain> [project-name] [description]
+sh create-project.sh <bitbucket|github> <slug> <prod-domain> [project-name] [description]
 ```
 for example:
 ```bash
-sh create-project.sh tv-tracker tvtracker.com "TV Tracker" "Track what you're watching"
+sh create-project.sh bitbucket tv-tracker tvtracker.com "TV Tracker" "Track what you're watching"
+```
+or:
+```bash
+sh create-project.sh github tv-tracker tvtracker.com
 ```
 
 ## 4.1 Arguments
 
+**bitbucket|github**: which provider to create the project's repo on.
+
 **slug**: lowercase, hyphenated (e.g. `tv-tracker`). Used for the local host (`<slug>.local`), the
 project folder (`storage/src/<slug>-local`), the database name and the composer package name.
 
-**prod-domain**: the real production domain, e.g. `tvtracker.com`. **DO NOT add protocols**.
+**prod-domain**: the real production domain, e.g. `tvtracker.com`. **DO NOT add protocols**. Also
+the repo name on either provider.
 
 **project-name** (optional): human-readable name. Defaults to Title Case of the slug.
 
 **description** (optional): short description. Defaults to empty.
 
-Needs a Bitbucket app password (`repository:write` on the `Optisistem` workspace) - if the
-`BITBUCKET_APP_PASSWORD` env var isn't set, it prompts for it interactively. `BITBUCKET_USERNAME`
-defaults to `bgavalda`, override it via env var if needed.
+`bitbucket` needs a Bitbucket app password (`repository:write` on the `Optisistem` workspace) - if
+the `BITBUCKET_APP_PASSWORD` env var isn't set, it prompts for it interactively.
+`BITBUCKET_USERNAME` defaults to `bgavalda`, override it via env var if needed.
+
+`github` needs `gh` (the GitHub CLI) already logged in (`gh auth status`) - no separate token
+handling, it reuses whatever account `gh` is authenticated as. Repos are created under
+`GITHUB_OWNER` (defaults to `barbaragavalda`, the only option right now since that account isn't in
+any GitHub organization).
 
 ## 4.2 What it does
 
 Running it will:
-* Create a private repo at `bitbucket.org/Optisistem/<prod-domain>` (aborts instead of reusing it
-  if a repo with that name already exists) - this is the naming convention for every new project
-  going forward; older sites like `optisistem-local`/`pugu-local`/`cuina-de-profit-local` don't
-  follow it consistently (different workspace, or a short name instead of the domain)
+* Create a private repo - `bitbucket.org/Optisistem/<prod-domain>` or
+  `github.com/<GITHUB_OWNER>/<prod-domain>` depending on the provider chosen (aborts instead of
+  reusing it if a repo with that name already exists). The Bitbucket naming convention
+  (`Optisistem/<prod-domain>`) is the one going forward; older sites like
+  `optisistem-local`/`pugu-local`/`cuina-de-profit-local` don't follow it consistently (different
+  workspace, or a short name instead of the domain)
 * Create the host/vhost exactly like `host.sh create <slug>.local` does (see section 2) - same
   elevation/`/etc/hosts` requirement, same full docker restart at the end
 * Copy `freimguork-skeleton` into the new project folder and `git init -b master` it there (its
@@ -112,13 +126,13 @@ Running it will:
   locale `.po` file) with the values above
 * Copy every `config/**/*.php.dist` to its real counterpart and fill in the shared DB credentials
   (section 3.1.1) plus a freshly generated encryption secret per environment
-* Commit that initial state and push it to the Bitbucket repo created above
+* Commit that initial state and push it to the repo created above
 * Create the project's database (aborts instead of reusing it if a database with that name already
   exists) and import the base Appacman schema (`db.sql`)
 * Run `composer install`, which also publishes the Appacman/AdminLTE assets into `web/`
 
 It will abort early, before touching anything, if the project folder, the database or the
-Bitbucket repo already exist - it never overwrites or reuses any of them.
+remote repo already exist - it never overwrites or reuses any of them.
 
 **Not automated on purpose**: creating the first Appacman admin user. `appacman_user.name`/`email`
 are encrypted and `password` is hashed under that project's own freshly generated secret, so it
@@ -130,7 +144,9 @@ needs a real password you choose - see "First admin user" in the new project's `
   latest version and downloads that exact build by version number.
 * Homebrew's `ssh` (ahead of `/usr/bin/ssh` in `PATH` on this machine) doesn't understand the
   `UseKeychain` directive in `~/.ssh/config`'s `Host bitbucket.org` block, so every git push against
-  Bitbucket in this script forces `GIT_SSH_COMMAND=/usr/bin/ssh` instead.
+  Bitbucket in this script forces `GIT_SSH_COMMAND=/usr/bin/ssh` instead. GitHub pushes don't need
+  this - `gh` already installed itself as this machine's git credential helper for `github.com` over
+  https, so a plain `git push` just works.
 * Bitbucket returns `404` (not `401`/`403`) for a private repo you can't authenticate into, so the
   pre-creation existence check can't distinguish "doesn't exist" from "wrong app password" - a bad
   password will instead surface as a clear failure on the actual creation call right after.
