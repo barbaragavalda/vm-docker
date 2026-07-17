@@ -91,32 +91,48 @@ project folder (`storage/src/<slug>-local`), the database name and the composer 
 
 **description** (optional): short description. Defaults to empty.
 
+Needs a Bitbucket app password (`repository:write` on the `Optisistem` workspace) - if the
+`BITBUCKET_APP_PASSWORD` env var isn't set, it prompts for it interactively. `BITBUCKET_USERNAME`
+defaults to `bgavalda`, override it via env var if needed.
+
 ## 4.2 What it does
 
 Running it will:
+* Create a private repo at `bitbucket.org/Optisistem/<prod-domain>` (aborts instead of reusing it
+  if a repo with that name already exists) - this is the naming convention for every new project
+  going forward; older sites like `optisistem-local`/`pugu-local`/`cuina-de-profit-local` don't
+  follow it consistently (different workspace, or a short name instead of the domain)
 * Create the host/vhost exactly like `host.sh create <slug>.local` does (see section 2) - same
   elevation/`/etc/hosts` requirement, same full docker restart at the end
-* Copy `freimguork-skeleton` into the new project folder and `git init` it there (its own history,
-  not a fork of the skeleton repo)
+* Copy `freimguork-skeleton` into the new project folder and `git init -b master` it there (its
+  own history, not a fork of the skeleton repo)
 * Fetch the latest jQuery release and drop it into `web/static/js/`, replacing the version bundled
   in the skeleton (see "Known gotcha" below)
 * Fill in every `{{...}}` placeholder (`composer.json`, `base_domain.php`, `Home.php`, `db.sql`, the
   locale `.po` file) with the values above
 * Copy every `config/**/*.php.dist` to its real counterpart and fill in the shared DB credentials
   (section 3.1.1) plus a freshly generated encryption secret per environment
+* Commit that initial state and push it to the Bitbucket repo created above
 * Create the project's database (aborts instead of reusing it if a database with that name already
   exists) and import the base Appacman schema (`db.sql`)
 * Run `composer install`, which also publishes the Appacman/AdminLTE assets into `web/`
 
-It will abort early, before touching anything, if the project folder or the database already
-exist - it never overwrites or reuses either.
+It will abort early, before touching anything, if the project folder, the database or the
+Bitbucket repo already exist - it never overwrites or reuses any of them.
 
 **Not automated on purpose**: creating the first Appacman admin user. `appacman_user.name`/`email`
 are encrypted and `password` is hashed under that project's own freshly generated secret, so it
 needs a real password you choose - see "First admin user" in the new project's `README.md`.
 
-**Known gotcha**: `code.jquery.com/jquery-latest.min.js` (the CDN's own "always latest" alias) has
-been frozen at jQuery v1.11.1 for years - don't use it. The script instead asks npm's registry for
-the actual latest version and downloads that exact build by version number.
+**Known gotchas**:
+* `code.jquery.com/jquery-latest.min.js` (the CDN's own "always latest" alias) has been frozen at
+  jQuery v1.11.1 for years - don't use it. The script instead asks npm's registry for the actual
+  latest version and downloads that exact build by version number.
+* Homebrew's `ssh` (ahead of `/usr/bin/ssh` in `PATH` on this machine) doesn't understand the
+  `UseKeychain` directive in `~/.ssh/config`'s `Host bitbucket.org` block, so every git push against
+  Bitbucket in this script forces `GIT_SSH_COMMAND=/usr/bin/ssh` instead.
+* Bitbucket returns `404` (not `401`/`403`) for a private repo you can't authenticate into, so the
+  pre-creation existence check can't distinguish "doesn't exist" from "wrong app password" - a bad
+  password will instead surface as a clear failure on the actual creation call right after.
 
 //TODO AFEGIR COM ES FA EL COMPOSE

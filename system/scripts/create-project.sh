@@ -21,10 +21,15 @@ Usage: sh create-project.sh <slug> <prod-domain> [project-name] [description]
   [description]   short description (default: empty)
 
 Scaffolds a new core+Appacman project from freimguork-skeleton: creates the
-vhost/host entry (via host.sh), copies the skeleton, fills in every
-placeholder, generates encryption secrets, creates the database (using the
-shared mariadb credentials documented in the VM's own README.md), imports
-the base Appacman schema and runs composer install.
+Bitbucket repo, the vhost/host entry (via host.sh), copies the skeleton,
+fills in every placeholder, generates encryption secrets, commits and
+pushes the initial state, creates the database (using the shared mariadb
+credentials documented in the VM's own README.md), imports the base
+Appacman schema and runs composer install.
+
+Needs a Bitbucket app password (repository:write on the Optisistem
+workspace) in the BITBUCKET_APP_PASSWORD env var - prompts for it
+interactively if that's not set. BITBUCKET_USERNAME defaults to "bgavalda".
 
 Creating the first admin user is left as a manual step (see "First admin
 user" in the new project's own README.md) since it needs a real password
@@ -36,6 +41,19 @@ USAGE
 # matches docker-compose.yml's php service MYSQL_USER/MYSQL_PASSWORD env
 DB_ADMIN_USER="optisistem"
 DB_ADMIN_PASSWORD="rtZYS9wJ7HWWNK"
+
+# every new project's repo lives under this Bitbucket workspace, named after
+# its production domain (the convention already used by optisistem-local,
+# pugu-local, etc. is inconsistent across older sites - this is the one
+# going forward)
+BITBUCKET_WORKSPACE="Optisistem"
+BITBUCKET_USERNAME="${BITBUCKET_USERNAME:-bgavalda}"
+
+# Homebrew's ssh (ahead of /usr/bin/ssh in PATH) doesn't understand the
+# UseKeychain directive in ~/.ssh/config's Host bitbucket.org block - use
+# Apple's own ssh for every git operation against Bitbucket instead of
+# editing that config
+BITBUCKET_GIT_SSH="/usr/bin/ssh"
 
 slug=$1
 prodDomain=$2
@@ -78,6 +96,35 @@ if [ -n "$dbExists" ]; then
     exit 1
 fi
 
+if [ -z "$BITBUCKET_APP_PASSWORD" ]; then
+    echo -n "Bitbucket app password (${BITBUCKET_USERNAME}, ${BITBUCKET_WORKSPACE} workspace): "
+    read -rs BITBUCKET_APP_PASSWORD
+    echo
+fi
+
+repoCheckStatus=$(curl -s -o /dev/null -w "%{http_code}" -u "${BITBUCKET_USERNAME}:${BITBUCKET_APP_PASSWORD}" \
+    "https://api.bitbucket.org/2.0/repositories/${BITBUCKET_WORKSPACE}/${prodDomain}")
+if [ "$repoCheckStatus" = "200" ]; then
+    echo "Bitbucket repo ${BITBUCKET_WORKSPACE}/${prodDomain} already exists - aborting so nothing gets reused by accident"
+    cdOriginalPath
+    exit 1
+elif [ "$repoCheckStatus" != "404" ]; then
+    echo "could not check Bitbucket (HTTP $repoCheckStatus) - check the app password/username and try again"
+    cdOriginalPath
+    exit 1
+fi
+
+echo "==> creating Bitbucket repo ${BITBUCKET_WORKSPACE}/${prodDomain}"
+createStatus=$(curl -s -o /dev/null -w "%{http_code}" -u "${BITBUCKET_USERNAME}:${BITBUCKET_APP_PASSWORD}" \
+    -H "Content-Type: application/json" \
+    -X POST "https://api.bitbucket.org/2.0/repositories/${BITBUCKET_WORKSPACE}/${prodDomain}" \
+    -d '{"scm": "git", "is_private": true}')
+if [ "$createStatus" != "200" ] && [ "$createStatus" != "201" ]; then
+    echo "Bitbucket repo creation failed (HTTP $createStatus)"
+    cdOriginalPath
+    exit 1
+fi
+
 echo "==> creating host $hostName"
 sh "$SCRIPT_DIR/host.sh" create "$hostName"
 
@@ -96,7 +143,7 @@ if [ -z "$secretDev" ] || [ -z "$secretProd" ]; then
 fi
 
 cd "$projectPath" || exit 1
-git init -q
+git init -q -b master
 
 echo "==> fetching latest jQuery"
 # code.jquery.com's own "jquery-latest.min.js" alias is a known trap - it has
@@ -138,6 +185,14 @@ done
 sed -i '' "s/<64 hex chars>/${secretDev}/g" config/dev/keys.php
 sed -i '' "s/<64 hex chars>/${secretProd}/g" config/prod/keys.php
 
+echo "==> committing and pushing initial state"
+git add -A
+git commit -q -m "Initial scaffold from freimguork-skeleton"
+git remote add origin "git@bitbucket.org:${BITBUCKET_WORKSPACE}/${prodDomain}.git"
+if ! GIT_SSH_COMMAND="${BITBUCKET_GIT_SSH}" git push -q -u origin master; then
+    echo "push failed - the repo was created and committed locally, finish pushing manually"
+fi
+
 echo "==> creating database"
 docker exec -i -e MYSQL_PWD="${DB_ADMIN_PASSWORD}" mariadb mariadb -u"${DB_ADMIN_USER}" -e "CREATE DATABASE \`${dbName}\`;"
 if [ $? -ne 0 ]; then
@@ -159,6 +214,8 @@ cat <<SUMMARY
 Done. ${projectName} is ready at:
   http://${hostName}/          (public site)
   http://${hostName}/wallaby/  (Appacman admin - no user yet)
+
+Repo: https://bitbucket.org/${BITBUCKET_WORKSPACE}/${prodDomain}
 
 DB: name=${dbName} (uses the shared VM DB user, already written into
 config/{dev,prod}/db.php)
