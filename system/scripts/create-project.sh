@@ -24,10 +24,11 @@ Usage: sh create-project.sh <bitbucket|github> <slug> <prod-domain> [project-nam
 
 Scaffolds a new core+Appacman project from freimguork-skeleton: creates the
 repo, the vhost/host entry (via host.sh), copies the skeleton, fills in
-every placeholder, generates encryption secrets, commits and pushes the
-initial state, creates the database (using the shared mariadb credentials
-documented in the VM's own README.md), imports the base Appacman schema and
-runs composer install.
+every placeholder, generates encryption secrets, runs composer install,
+builds db.sql (see build-db-sql.sh - Appacman's schema plus any vendorApp's
+own), commits and pushes the initial state, then creates the database
+(using the shared mariadb credentials documented in the VM's own
+README.md) and imports db.sql.
 
 bitbucket: creates a private repo under the Optisistem workspace. Needs a
 Bitbucket app password (repository:write on that workspace) in the
@@ -201,7 +202,7 @@ else
 fi
 
 echo "==> filling placeholders"
-for f in composer.json config/dev/base_domain.php config/prod/base_domain.php src/Web/Controller/Home.php db.sql locale/en_GB/LC_MESSAGES/messenges.po; do
+for f in composer.json config/dev/base_domain.php config/prod/base_domain.php src/Web/Controller/Home.php locale/en_GB/LC_MESSAGES/messenges.po; do
     sed -i '' \
         -e "s#{{project-slug}}#${slug}#g" \
         -e "s#{{project name}}#${projectName}#g" \
@@ -225,6 +226,12 @@ for f in config/dev/db.php config/prod/db.php; do
 done
 sed -i '' "s/<64 hex chars>/${secretDev}/g" config/dev/keys.php
 sed -i '' "s/<64 hex chars>/${secretProd}/g" config/prod/keys.php
+
+echo "==> composer install (also publishes Appacman/AdminLTE assets into web/)"
+docker exec php sh -c "cd /var/www/html/${hostNameAlias} && composer install"
+
+echo "==> building db.sql (Appacman's schema + any vendorApp's own)"
+sh "$SCRIPT_DIR/build-db-sql.sh" "$slug"
 
 echo "==> committing and pushing initial state"
 git add -A
@@ -251,9 +258,6 @@ fi
 
 echo "==> importing db.sql"
 docker exec -i -e MYSQL_PWD="${DB_ADMIN_PASSWORD}" mariadb mariadb -u"${DB_ADMIN_USER}" "${dbName}" < db.sql
-
-echo "==> composer install (also publishes Appacman/AdminLTE assets into web/)"
-docker exec php sh -c "cd /var/www/html/${hostNameAlias} && composer install"
 
 cdOriginalPath
 

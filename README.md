@@ -122,14 +122,15 @@ Running it will:
   own history, not a fork of the skeleton repo)
 * Fetch the latest jQuery release and drop it into `web/static/js/`, replacing the version bundled
   in the skeleton (see "Known gotcha" below)
-* Fill in every `{{...}}` placeholder (`composer.json`, `base_domain.php`, `Home.php`, `db.sql`, the
-  locale `.po` file) with the values above
+* Fill in every `{{...}}` placeholder (`composer.json`, `base_domain.php`, `Home.php`, the locale
+  `.po` file) with the values above
 * Copy every `config/**/*.php.dist` to its real counterpart and fill in the shared DB credentials
   (section 3.1.1) plus a freshly generated encryption secret per environment
-* Commit that initial state and push it to the repo created above
-* Create the project's database (aborts instead of reusing it if a database with that name already
-  exists) and import the base Appacman schema (`db.sql`)
 * Run `composer install`, which also publishes the Appacman/AdminLTE assets into `web/`
+* Build `db.sql` with `build-db-sql.sh` (section 4.3) - Appacman's schema plus any vendorApp's own
+* Commit that initial state (including the generated `db.sql`) and push it to the repo created above
+* Create the project's database (aborts instead of reusing it if a database with that name already
+  exists) and import `db.sql`
 
 It will abort early, before touching anything, if the project folder, the database or the
 remote repo already exist - it never overwrites or reuses any of them.
@@ -137,6 +138,27 @@ remote repo already exist - it never overwrites or reuses any of them.
 **Not automated on purpose**: creating the first Appacman admin user. `appacman_user.name`/`email`
 are encrypted and `password` is hashed under that project's own freshly generated secret, so it
 needs a real password you choose - see "First admin user" in the new project's `README.md`.
+
+## 4.3 Rebuilding db.sql after adding a vendorApp
+
+Each Freimguork package that needs its own tables (`freimguork-appacman`, `freimguork-webservice`,
+...) ships its own `db.sql` at its package root instead of every consuming project hand-copying the
+tables it needs - that's how `appacman_app_config` ended up missing from `tv-tracker-local` and
+silently broke CORS headers (a missing table there triggers dev-mode debug output that runs before
+headers are sent, dropping the rest of the response's headers). `build-db-sql.sh` is what actually
+assembles a project's `db.sql` from those pieces:
+
+```bash
+sh build-db-sql.sh <slug>
+```
+
+It concatenates `vendor/optisistem/freimguork-appacman/db.sql` (always) with the `db.sql` of every
+`vendorApp` declared across all sub-projects in that project's `config/projects.php` - silently
+skipping any vendor that doesn't ship one. `create-project.sh` already calls this once during
+scaffolding; run it again by hand (then re-import the resulting `db.sql`) whenever a project adds a
+new `vendorApp` later - e.g. adding `Webservice` to power a mobile API, like `tv-tracker-local` did.
+Needs `composer install` to have already run, since it reads the schema files straight out of
+`vendor/optisistem/*/db.sql`.
 
 **Known gotchas**:
 * `code.jquery.com/jquery-latest.min.js` (the CDN's own "always latest" alias) has been frozen at
